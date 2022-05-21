@@ -6,7 +6,7 @@ import {
   HStack,
   Select,
   Input,
-  Box
+  Box,
 } from "@chakra-ui/react";
 import { CheckCircleIcon, WarningIcon } from "@chakra-ui/icons";
 import { Tooltip } from "@chakra-ui/react";
@@ -15,10 +15,16 @@ import { toHex, truncateAddress } from "./utils";
 import { ethers } from "ethers";
 import Web3Modal from "web3modal";
 import { providerOptions } from "./providerOption";
+import EpnsSDK from "@epnsproject/backend-sdk-staging";
+import {
+  api,
+  utils,
+  NotificationItem,
+} from "@epnsproject/frontend-sdk-staging";
 
 const web3Modal = new Web3Modal({
   cacheProvider: true, // optional
-  providerOptions // required
+  providerOptions, // required
 });
 
 export default function Home() {
@@ -33,6 +39,41 @@ export default function Home() {
   const [signedMessage, setSignedMessage] = useState("");
   const [verified, setVerified] = useState();
   const [isOpen, setIsOpen] = useState(false);
+  const [notificationItem, setNotificationItem] = useState([]);
+
+  // EPNS
+
+  const CHANNEL_PK =
+    "0xa230dc27a871b0ab60be720c328a77e9c1ee04abd613946ae32bc9e972dbda38"; // the private key of the address which you used to create a channel// Initialise the SDK
+  const epnsSdk = new EpnsSDK(CHANNEL_PK);
+
+  useEffect(() => {
+    // EPNS
+    fetchNotifications();
+  }, [account]);
+
+  async function fetchNotifications() {
+    if (account) {
+      alert("I am called!");
+      // define the variables required to make a request
+      const walletAddress = account;
+      const pageNumber = 1;
+      const itemsPerPage = 20;
+
+      // fetch the notifications
+      const { count, results } = await api.fetchNotifications(
+        walletAddress,
+        itemsPerPage,
+        pageNumber
+      );
+      console.log({ results });
+
+      // parse all the fetched notifications
+      const parsedResponse = utils.parseApiResponse(results);
+      setNotificationItem(parsedResponse);
+      console.log(parsedResponse);
+    }
+  }
 
   const connectWallet = async () => {
     try {
@@ -45,6 +86,18 @@ export default function Home() {
       if (accounts) setAccount(accounts[0]);
       setIsOpen(true);
       setChainId(network.chainId);
+      // EPNS
+      const tx = await epnsSdk.sendNotification(
+        accounts[0],
+        "Test Message",
+        "Hello How are you doing? New 2",
+        "Test",
+        "From EPNS",
+        3, //this is the notificationType
+        "http://localhost:3000/", // a url for users to be redirected to
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQABNYfftKSA0v56thFU7kSGKYPod8bcc5NAf3tgyiC5OSKnrhTeMpu7H3Hz0aUmDOugY&usqp=CAU", // an image url, or an empty string
+        null //this can be left as null
+      );
     } catch (error) {
       setError(error);
     }
@@ -64,14 +117,14 @@ export default function Home() {
     try {
       await library.provider.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: toHex(network) }]
+        params: [{ chainId: toHex(network) }],
       });
     } catch (switchError) {
       if (switchError.code === 4902) {
         try {
           await library.provider.request({
             method: "wallet_addEthereumChain",
-            params: [networkParams[toHex(network)]]
+            params: [networkParams[toHex(network)]],
           });
         } catch (error) {
           setError(error);
@@ -85,7 +138,7 @@ export default function Home() {
     try {
       const signature = await library.provider.request({
         method: "personal_sign",
-        params: [message, account]
+        params: [message, account],
       });
       setSignedMessage(message);
       setSignature(signature);
@@ -99,7 +152,7 @@ export default function Home() {
     try {
       const verify = await library.provider.request({
         method: "personal_ecRecover",
-        params: [signedMessage, signature]
+        params: [signedMessage, signature],
       });
       setVerified(verify === account.toLowerCase());
     } catch (error) {
@@ -180,7 +233,7 @@ export default function Home() {
             sx={{
               background: "linear-gradient(90deg, #1652f0 0%, #b9cbfb 70.35%)",
               WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent"
+              WebkitTextFillColor: "transparent",
             }}
           >
             Web3Modal
@@ -193,6 +246,17 @@ export default function Home() {
             <Button onClick={disconnect}>Disconnect</Button>
           )}
         </HStack>
+        {/* Transak */}
+        <Button
+          onClick={() => {
+            window.open(
+              `https://staging-global.transak.com/?apiKey=${process.env.REACT_APP_TRANSAK_API_KEY}`,
+              "_blank"
+            );
+          }}
+        >
+          Pay Now
+        </Button>
         <VStack justifyContent="center" alignItems="center" padding="10px 0">
           <HStack>
             <Text>{`Connection Status: `}</Text>
@@ -280,6 +344,18 @@ export default function Home() {
                 ) : null}
               </VStack>
             </Box>
+            {/* EPNS  */}
+            {notificationItem.map((oneNotification) => (
+              <NotificationItem
+                notificationTitle={oneNotification.notification.title}
+                notificationBody={oneNotification.notification.body}
+                cta={oneNotification.cta}
+                app={oneNotification.app}
+                icon={oneNotification.icon}
+                image={oneNotification.image}
+                url={oneNotification.url}
+              />
+            ))}
           </HStack>
         )}
         <Text>{error ? error.message : null}</Text>

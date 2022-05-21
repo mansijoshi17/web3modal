@@ -10,8 +10,13 @@
     "@coinbase/wallet-sdk": "3.0.1",
     "@emotion/react": "11.8.1",
     "@emotion/styled": "11.8.1",
+    "@epnsproject/backend-sdk-staging": "^2.0.3",
+    "@epnsproject/frontend-sdk": "^1.5.2",
+    "@epnsproject/frontend-sdk-staging": "^1.8.0",
+    "@uauth/js": "^1.1.0",
     "@uauth/web3modal": "^1.1.0",
-    "@walletconnect/web3-provider": "1.7.3",
+    "@walletconnect/web3-provider": "^1.7.8",
+    "dotenv": "^16.0.1",
     "emotion-theming": "11.0.0",
     "ethers": "5.5.4",
     "framer-motion": "^4.1.17",
@@ -20,7 +25,7 @@
     "react-scripts": "4.0.0",
     "styled-components": "5.3.3",
     "walletlink": "2.5.0",
-    "web3modal": "1.9.5"
+    "web3modal": "^1.9.5"
   },
   "scripts": {
     "start": "react-scripts start",
